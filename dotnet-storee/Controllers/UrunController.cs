@@ -1,23 +1,25 @@
 ﻿using dotnet_storee.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
 
 namespace dotnet_storee.Controllers;
 
-    public class UrunController: Controller
+public class UrunController : Controller
+{
+
+    //Dependency Injection => DI
+
+    private readonly DataContext _context;
+    public UrunController(DataContext context)
     {
-        
-        //Dependency Injection => DI
+        _context = context;
+    }
 
-        private readonly DataContext _context;
-        public UrunController(DataContext context)
-        {
-            _context = context;
-        }
 
-        public ActionResult Index()
-        {
+    public ActionResult Index()
+    {
         //var urunler = _context.Urunler.Include(i => i.Kategori).ToList();
 
         var urunler = _context.Urunler.Select(i => new UrunGetModel
@@ -32,18 +34,18 @@ namespace dotnet_storee.Controllers;
 
         }).ToList();
         return View(urunler);
-        }
-        public ActionResult List(string url, string q)
-        {
+    }
+    public ActionResult List(string url, string q)
+    {
 
         var query = _context.Urunler.Where(i => i.Aktif);
 
-        if(!string.IsNullOrEmpty(url))
+        if (!string.IsNullOrEmpty(url))
         {
             query = query.Where(i => i.Kategori.Url == url);
         }
 
-        if(!string.IsNullOrEmpty(q))
+        if (!string.IsNullOrEmpty(q))
         {
             query = query.Where(i => i.UrunAdi.ToLower().Contains(q.ToLower()));
 
@@ -52,15 +54,15 @@ namespace dotnet_storee.Controllers;
 
         //var urunler = _context.Urunler.Where(i => i.Kategori.Url==url && i.Aktif).ToList();
         return View(query.ToList());
-        }
-        public ActionResult Details(int id)
-        {
+    }
+    public ActionResult Details(int id)
+    {
         var urun = _context.Urunler.FirstOrDefault(i => i.Id == id);
         //var urun = _context.Urunler.Find(id);
 
-        if(urun == null)
+        if (urun == null)
         {
-            return RedirectToAction("Index" , "Home");
+            return RedirectToAction("Index", "Home");
         }
 
 
@@ -71,6 +73,8 @@ namespace dotnet_storee.Controllers;
 
     public ActionResult Create()
     {
+        //ViewBag.Kategoriler= _context.Kategori.ToList();
+        ViewBag.Kategoriler = new SelectList(_context.Kategori.ToList(), "Id", "KategoriAdi");
         return View();
     }
 
@@ -91,10 +95,64 @@ namespace dotnet_storee.Controllers;
         _context.Urunler.Add(entity);
         _context.SaveChanges();
 
-        return RedirectToAction("Index"); 
+        return RedirectToAction("Index");
+    }
+
+    public ActionResult Edit(int id)
+    {
+        var entity = _context.Urunler.Select(i => new UrunEditModel
+        {
+             Id = i.Id,
+              Aciklama=i.Aciklama,
+               Aktif=i.Aktif,
+                Anasayfa=i.Anasayfa,
+                 KategoriId = i.KategoriId,
+                  fiyat = i.fiyat,
+                   Resim =i.Resim,
+                   UrunAdi = i.UrunAdi
+             
+
+        }).FirstOrDefault(i => i.Id == id);
+        ViewBag.Kategoriler = new SelectList(_context.Kategori.ToList(), "Id", "KategoriAdi");
+        return View(entity);
     }
 
 
+    [HttpPost]
+    public ActionResult Edit(int id ,UrunEditModel model)
+    {
+        if (id != model.Id)
+        {
+            return RedirectToAction("Index");
+        }
+
+        var entity= _context.Urunler.FirstOrDefault(i => i.Id == model.Id);
+
+        if(entity != null)
+        {
+            entity.UrunAdi= model.UrunAdi;
+            entity.Aciklama = model.Aciklama;
+            entity.Aktif = model.Aktif;
+            entity.fiyat = model.fiyat;
+            //entity.Resim = model.Resim;
+            entity.Anasayfa = model.Anasayfa;
+            entity.KategoriId = model.KategoriId;
+
+            _context.SaveChanges();
+
+            TempData["Mesaj"] = $"{entity.UrunAdi} adlı ürün başarıyla güncellendi.";
+
+            return RedirectToAction("Index");
+
+        }
+        return View(model);
+    }
+
+
+
+
 }
+
+
 
 

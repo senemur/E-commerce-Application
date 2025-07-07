@@ -43,5 +43,42 @@ namespace dotnet_storee.Controllers
             return RedirectToAction("Index");
             
         }
+
+        public ActionResult Edit(int id)
+        {
+            var entity = _context.Kategori.Select(i=> new KategoriEditModels
+            {
+                Id = i.Id,
+                KategoriAdi = i.KategoriAdi,
+                Url = i.Url
+
+            }).FirstOrDefault(i => i.Id == id);
+            return View(entity);
+        }
+
+        [HttpPost]
+        public ActionResult Edit(int id, KategoriEditModels model)
+        { 
+            if(id != model.Id)
+            {
+                return NotFound();
+            }
+
+            var entity = _context.Kategori.FirstOrDefault(i => i.Id == model.Id);
+            if (entity != null)
+            {
+               entity.KategoriAdi = model.KategoriAdi;
+                entity.Url = model.Url;
+
+                _context.SaveChanges();
+
+                TempData["Mesaj"] = $"{entity.KategoriAdi} güncellendi."; 
+
+                return RedirectToAction("Index");
+            }
+            return View();
+
+        }
     }
+    
 }
